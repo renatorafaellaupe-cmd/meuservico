@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Gestão & Comando de Serviço</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0265d2',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .print-card { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+        }
+        .print-only { display: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col md:flex-row antialiased">
+
+    <!-- Sidebar / Navegação Lateral (no-print) -->
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 no-print flex flex-col justify-between shadow-xl">
+        <div>
+            <!-- Header do Sidebar -->
+            <div class="p-5 bg-slate-950 flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-brand-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-white text-base leading-tight">ComandoServ</h1>
+                        <p class="text-xs text-slate-400">Escala & Serviços</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menus de Navegação -->
+            <nav class="p-4 space-y-1.5">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all bg-brand-600 text-white shadow-md">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Visão Geral (KPIs)</span>
+                </button>
+                <button onclick="switchTab('pessoas')" id="nav-pessoas" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Pessoas & Comando</span>
+                </button>
+                <button onclick="switchTab('servicos')" id="nav-servicos" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="fa-solid fa-list-check w-5 text-center"></i>
+                    <span>Lançar / Serviços</span>
+                </button>
+                <button onclick="switchTab('setores')" id="nav-setores" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="fa-solid fa-sitemap w-5 text-center"></i>
+                    <span>Gerenciar Setores</span>
+                </button>
+                <button onclick="switchTab('relatorio')" id="nav-relatorio" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="fa-solid fa-file-invoice w-5 text-center"></i>
+                    <span>Relatório Diário</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 space-y-2">
+            <div class="flex items-center justify-between">
+                <span>Status Sistema:</span>
+                <span class="inline-flex items-center text-emerald-400"><i class="fa-solid fa-circle text-[8px] mr-1.5"></i> Online</span>
+            </div>
+            <p>© 2026 Sistema de Escala</p>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- Topbar Superior (no-print) -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print shadow-sm">
+            <div>
+                <h2 id="page-title" class="text-xl font-bold text-slate-900">Painel Principal</h2>
+                <p id="page-subtitle" class="text-xs text-slate-500">Resumo executivo do comando e serviços do dia</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openNewServicoModal()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg flex items-center shadow transition-all">
+                    <i class="fa-solid fa-plus mr-2"></i> Novo Serviço
+                </button>
+                <button onclick="openNewPessoaModal()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg flex items-center shadow transition-all">
+                    <i class="fa-solid fa-user-plus mr-2"></i> Nova Pessoa
+                </button>
+                <button onclick="openModal('modal-novo-setor')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs sm:text-sm font-medium px-3 py-2.5 rounded-lg flex items-center transition-all">
+                    <i class="fa-solid fa-folder-plus mr-2 text-brand-600"></i> Setor
+                </button>
+            </div>
+        </header>
+
+        <!-- Container das Páginas -->
+        <div class="p-4 sm:p-6 space-y-6 flex-1">
+
+            <!-- PAGE 1: DASHBOARD (VISÃO GERAL) -->
+            <section id="page-dashboard" class="tab-page space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Efetivo Cadastrado</p>
+                            <h3 id="kpi-total-pessoas" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                            <span class="text-xs text-slate-400 mt-1 inline-block">Pessoas registradas</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Em Andamento</p>
+                            <h3 id="kpi-servicos-ativos" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                            <span class="text-xs text-amber-700/70 mt-1 inline-block">Serviços ativos hoje</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Concluídos Hoje</p>
+                            <h3 id="kpi-servicos-concluidos" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                            <span class="text-xs text-emerald-700/70 mt-1 inline-block">Finalizados com sucesso</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-check-circle"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Setores Ativos</p>
+                            <h3 id="kpi-total-setores" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+                            <span class="text-xs text-indigo-700/70 mt-1 inline-block">Unidades cadastradas</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sitemap"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Serviços e Escalas Recentes</h3>
+                            <p class="text-xs text-slate-500">Últimas ordens e chamados de serviço registrados</p>
+                        </div>
+                        <button onclick="switchTab('servicos')" class="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center">
+                            Ver Todos os Serviços <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-100">
+                                <tr>
+                                    <th class="p-4">Pessoa Escalada</th>
+                                    <th class="p-4">Setor</th>
+                                    <th class="p-4">Serviço / Missão</th>
+                                    <th class="p-4">Solicitante</th>
+                                    <th class="p-4">Horário</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-recent-table" class="divide-y divide-slate-100">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE 2: PESSOAS & COMANDO INDIVIDUAL -->
+            <section id="page-pessoas" class="tab-page hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="relative w-full sm:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="filter-pessoa-search" oninput="renderPessoas()" placeholder="Buscar por nome ou cargo..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                        <select id="filter-pessoa-setor" onchange="renderPessoas()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="">Todos os Setores</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="pessoas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Preenchido via JS -->
+                </div>
+            </section>
+
+            <!-- PAGE 3: LANÇAR / GESTÃO DE SERVIÇOS -->
+            <section id="page-servicos" class="tab-page hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center">
+                            <i class="fa-solid fa-filter text-brand-600 mr-2"></i> Filtros de Busca Avançada
+                        </h3>
+                        <button onclick="resetServicosFilters()" class="text-xs text-slate-500 hover:text-brand-600">Limpar Filtros</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Buscar Termo</label>
+                            <input type="text" id="filter-servico-query" oninput="renderServicos()" placeholder="Serviço, solicitante..." class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Setor</label>
+                            <select id="filter-servico-setor" onchange="renderServicos()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="">Todos os Setores</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Pessoa Escalada</label>
+                            <select id="filter-servico-pessoa" onchange="renderServicos()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="">Todas as Pessoas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
+                            <select id="filter-servico-status" onchange="renderServicos()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="">Todos os Status</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Concluído">Concluído</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-900 text-base">Lista Geral de Serviços Solicitados</h3>
+                        <span id="servico-count-badge" class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-full">0 registros</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-100">
+                                <tr>
+                                    <th class="p-4">Data/Hora</th>
+                                    <th class="p-4">Pessoa Escalada</th>
+                                    <th class="p-4">Setor</th>
+                                    <th class="p-4">Serviço / Detalhes</th>
+                                    <th class="p-4">Solicitante</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicos-main-table" class="divide-y divide-slate-100">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE 4: GERENCIAR SETORES -->
+            <section id="page-setores" class="tab-page hidden space-y-6">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Cadastro e Edição de Setores</h3>
+                        <p class="text-xs text-slate-500">Adicione, edite ou remova setores da organização</p>
+                    </div>
+                    <button onclick="openModal('modal-novo-setor')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center shadow">
+                        <i class="fa-solid fa-plus mr-2"></i> Adicionar Setor
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="setores-grid">
+                    <!-- Preenchido via JS -->
+                </div>
+            </section>
+
+            <!-- PAGE 5: RELATÓRIO DIÁRIO -->
+            <section id="page-relatorio" class="tab-page hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+                    <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Filtrar por Data:</label>
+                            <input type="date" id="relatorio-date-filter" onchange="renderRelatorioDiario()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Setor:</label>
+                            <select id="relatorio-setor-filter" onchange="renderRelatorioDiario()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="">Todos os Setores</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                        <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center shadow transition-all">
+                            <i class="fa-solid fa-print mr-2"></i> Imprimir / Exportar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-md space-y-6 print-card">
+                    <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 uppercase tracking-tight">Relatório Diário de Comando & Serviços</h2>
+                            <p class="text-sm text-slate-600 mt-1">Sistemas de Controle de Escalas de Pessoal</p>
+                        </div>
+                        <div class="text-right text-xs text-slate-500">
+                            <p><strong>Data de Emissão:</strong> <span id="relatorio-emissao-date">--/--/----</span></p>
+                            <p><strong>Filtro Data:</strong> <span id="relatorio-filtro-data-label">Hoje</span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div>
+                            <span class="text-xs uppercase text-slate-500 font-semibold block">Total de Solicitações</span>
+                            <span id="rel-total-count" class="text-xl font-bold text-slate-800">0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase text-slate-500 font-semibold block">Concluídos</span>
+                            <span id="rel-concluidos-count" class="text-xl font-bold text-emerald-600">0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase text-slate-500 font-semibold block">Em Andamento</span>
+                            <span id="rel-ativos-count" class="text-xl font-bold text-amber-600">0</span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 border-b border-slate-300 text-slate-700 uppercase font-bold">
+                                    <th class="p-3 border-b">Horário</th>
+                                    <th class="p-3 border-b">Pessoa Escalada</th>
+                                    <th class="p-3 border-b">Setor</th>
+                                    <th class="p-3 border-b">Serviço / Descrição</th>
+                                    <th class="p-3 border-b">Solicitante</th>
+                                    <th class="p-3 border-b">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="relatorio-table-body" class="divide-y divide-slate-200">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pt-12 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 print-only">
+                        <div class="text-center w-56 border-t border-slate-400 pt-1">
+                            Assinatura do Responsável
+                        </div>
+                        <div class="text-center w-56 border-t border-slate-400 pt-1">
+                            Oficial de Dia / Comando
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODAL: FICHA INDIVIDUAL DE PESSOA -->
+    <div id="modal-pessoa-detalhes" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white p-5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img id="modal-p-avatar" src="" alt="Avatar" class="w-12 h-12 rounded-full border-2 border-brand-500 object-cover">
+                    <div>
+                        <h3 id="modal-p-nome" class="font-bold text-lg leading-tight">Nome da Pessoa</h3>
+                        <p id="modal-p-cargo-setor" class="text-xs text-slate-300">Cargo • Setor</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-pessoa-detalhes')" class="text-slate-400 hover:text-white text-lg p-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4 text-center bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div>
+                        <span class="text-xs text-slate-500 font-semibold block">Total de Serviços</span>
+                        <span id="modal-p-total-servicos" class="font-bold text-brand-600 text-lg">0</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-semibold block">Status Atual</span>
+                        <span id="modal-p-status" class="inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full mt-1">--</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center">
+                        <i class="fa-solid fa-clock-rotate-left mr-2 text-brand-600"></i> Histórico de Serviços & Escalas
+                    </h4>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Data/Hora</th>
+                                    <th class="p-3">Serviço / Missão</th>
+                                    <th class="p-3">Solicitante</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-p-servicos-list" class="divide-y divide-slate-100">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
+                <button onclick="closeModal('modal-pessoa-detalhes')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-lg">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVO SERVIÇO -->
+    <div id="modal-novo-servico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="bg-brand-700 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-clipboard-list mr-2"></i> Lançar Novo Serviço</h3>
+                <button onclick="closeModal('modal-novo-servico')" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-novo-servico" onsubmit="handleSaveServico(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pessoa Escalada *</label>
+                    <select id="form-s-pessoa" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Setor do Serviço *</label>
+                        <select id="form-s-setor" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Solicitante *</label>
+                        <input type="text" id="form-s-solicitante" required placeholder="Quem pediu?" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Descrição do Serviço / Missão *</label>
+                    <input type="text" id="form-s-descricao" required placeholder="Ex: Manutenção da rede de computadores" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Data / Hora Início *</label>
+                        <input type="datetime-local" id="form-s-inicio" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Status Inicial *</label>
+                        <select id="form-s-status" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Observações</label>
+                    <textarea id="form-s-obs" rows="2" placeholder="Detalhes adicionais..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('modal-novo-servico')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow">Salvar Serviço</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVA PESSOA / EDITAR PESSOA (Sem Matrícula) -->
+    <div id="modal-nova-pessoa" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                <h3 id="modal-pessoa-title" class="font-bold text-base"><i class="fa-solid fa-user-plus mr-2"></i> Cadastrar Pessoa</h3>
+                <button onclick="closeModal('modal-nova-pessoa')" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-nova-pessoa" onsubmit="handleSavePessoa(event)" class="p-6 space-y-4">
+                <input type="hidden" id="form-p-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo *</label>
+                    <input type="text" id="form-p-nome" required placeholder="Ex: Sgt. Carlos Andrade" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Setor *</label>
+                    <select id="form-p-setor" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cargo / Função *</label>
+                    <input type="text" id="form-p-cargo" required placeholder="Ex: Técnico de Suporte" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('modal-nova-pessoa')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVO SETOR / EDITAR SETOR -->
+    <div id="modal-novo-setor" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                <h3 id="modal-setor-title" class="font-bold text-base"><i class="fa-solid fa-folder-plus mr-2"></i> Novo Setor</h3>
+                <button onclick="closeModal('modal-novo-setor')" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-novo-setor" onsubmit="handleSaveSetor(event)" class="p-6 space-y-4">
+                <input type="hidden" id="form-setor-old-nome">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Setor *</label>
+                    <input type="text" id="form-setor-nome" required placeholder="Ex: Logística" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div class="pt-3 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('modal-novo-setor')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow">Salvar Setor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // MOCK DATA INICIAL
+        const defaultSetores = ["TI", "Operações", "Segurança", "Logística", "Manutenção", "Recursos Humanos"];
+
+        const defaultPessoas = [
+            { id: "1", nome: "Carlos Eduardo Silva", setor: "TI", cargo: "Analista de Redes", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" },
+            { id: "2", nome: "Mariana Costa", setor: "Operações", cargo: "Supervisora de Campo", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" },
+            { id: "3", nome: "Roberto Oliveira", setor: "Segurança", cargo: "Inspetor de Segurança", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" },
+            { id: "4", nome: "Ana Paula Souza", setor: "Logística", cargo: "Coordenadora de Frota", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150" },
+            { id: "5", nome: "Lucas Mendes", setor: "Manutenção", cargo: "Técnico Eletricista", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" }
+        ];
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const defaultServicos = [
+            { id: "s1", pessoaId: "1", setor: "TI", solicitante: "Diretoria", descricao: "Manutenção do servidor de dados principal", dataInicio: `${todayStr}T08:30`, status: "Em Andamento", obs: "Aguardando janela de reinício" },
+            { id: "s2", pessoaId: "2", setor: "Operações", solicitante: "Cap. Ferreira", descricao: "Ronda e fiscalização nos postos operacionais", dataInicio: `${todayStr}T07:00`, status: "Concluído", obs: "Sem alteração" },
+            { id: "s3", pessoaId: "3", setor: "Segurança", solicitante: "RH", descricao: "Controle de acesso do evento corporativo", dataInicio: `${todayStr}T13:00`, status: "Em Andamento", obs: "Público estimado: 150 pessoas" },
+            { id: "s4", pessoaId: "5", setor: "Manutenção", solicitante: "Gerência Predial", descricao: "Reparo no sistema de ar-condicionado central", dataInicio: `${todayStr}T09:15`, status: "Concluído", obs: "Filtros trocados" },
+            { id: "s5", pessoaId: "4", setor: "Logística", solicitante: "Almoxarifado", descricao: "Transporte e entrega de suprimentos", dataInicio: `${todayStr}T14:00`, status: "Pendente", obs: "Veículo em preparação" }
+        ];
+
+        // Estado da Aplicação
+        let setores = JSON.parse(localStorage.getItem('cmd_setores')) || defaultSetores;
+        let pessoas = JSON.parse(localStorage.getItem('cmd_pessoas')) || defaultPessoas;
+        let servicos = JSON.parse(localStorage.getItem('cmd_servicos')) || defaultServicos;
+
+        // Salvar no LocalStorage
+        function saveData() {
+            localStorage.setItem('cmd_setores', JSON.stringify(setores));
+            localStorage.setItem('cmd_pessoas', JSON.stringify(pessoas));
+            localStorage.setItem('cmd_servicos', JSON.stringify(servicos));
+            refreshAll();
+        }
+
+        // Troca de Abas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-page').forEach(page => page.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`page-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            const titles = {
+                dashboard: { title: "Painel Principal", sub: "Resumo executivo do comando e serviços do dia" },
+                pessoas: { title: "Pessoas & Comando de Serviço", sub: "Consulta e ficha individual das pessoas cadastradas" },
+                servicos: { title: "Gestão e Lançamento de Serviços", sub: "Listagem com filtros avançados e alteração de status" },
+                setores: { title: "Gerenciamento de Setores", sub: "Adicione, edite ou remova setores da organização" },
+                relatorio: { title: "Relatório Diário de Serviços", sub: "Visão consolidada para exportação e impressão" }
+            };
+            if(titles[tabId]) {
+                document.getElementById('page-title').textContent = titles[tabId].title;
+                document.getElementById('page-subtitle').textContent = titles[tabId].sub;
+            }
+
+            refreshAll();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function openNewServicoModal() {
+            populatePessoasDropdown('form-s-pessoa');
+            populateSetorDropdowns();
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('form-s-inicio').value = now.toISOString().slice(0,16);
+            openModal('modal-novo-servico');
+        }
+
+        function openNewPessoaModal(pessoaId = null) {
+            document.getElementById('form-nova-pessoa').reset();
+            document.getElementById('form-p-id').value = '';
+            populateSetorDropdowns();
+
+            if (pessoaId) {
+                const p = pessoas.find(item => item.id === pessoaId);
+                if (p) {
+                    document.getElementById('form-p-id').value = p.id;
+                    document.getElementById('form-p-nome').value = p.nome;
+                    document.getElementById('form-p-setor').value = p.setor;
+                    document.getElementById('form-p-cargo').value = p.cargo;
+                    document.getElementById('modal-pessoa-title').innerHTML = `<i class="fa-solid fa-user-pen mr-2"></i> Editar Pessoa`;
+                }
+            } else {
+                document.getElementById('modal-pessoa-title').innerHTML = `<i class="fa-solid fa-user-plus mr-2"></i> Cadastrar Pessoa`;
+            }
+
+            openModal('modal-nova-pessoa');
+        }
+
+        function openEditSetorModal(oldNome) {
+            document.getElementById('form-setor-old-nome').value = oldNome;
+            document.getElementById('form-setor-nome').value = oldNome;
+            document.getElementById('modal-setor-title').innerHTML = `<i class="fa-solid fa-pen-to-square mr-2"></i> Editar Setor`;
+            openModal('modal-novo-setor');
+        }
+
+        function refreshAll() {
+            populateSetorDropdowns();
+            renderKPIs();
+            renderDashboardTable();
+            renderPessoas();
+            renderServicos();
+            renderSetores();
+            renderRelatorioDiario();
+        }
+
+        function renderKPIs() {
+            document.getElementById('kpi-total-pessoas').textContent = pessoas.length;
+            document.getElementById('kpi-total-setores').textContent = setores.length;
+
+            const hoje = new Date().toISOString().split('T')[0];
+            const servicosHoje = servicos.filter(s => s.dataInicio.startsWith(hoje));
+
+            const ativos = servicosHoje.filter(s => s.status === 'Em Andamento').length;
+            const concluidos = servicosHoje.filter(s => s.status === 'Concluído').length;
+
+            document.getElementById('kpi-servicos-ativos').textContent = ativos;
+            document.getElementById('kpi-servicos-concluidos').textContent = concluidos;
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'Em Andamento':
+                    return `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full inline-flex items-center"><i class="fa-solid fa-spinner text-[10px] mr-1 animate-spin"></i> Em Andamento</span>`;
+                case 'Concluído':
+                    return `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full inline-flex items-center"><i class="fa-solid fa-check text-[10px] mr-1"></i> Concluído</span>`;
+                case 'Pendente':
+                    return `<span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full inline-flex items-center"><i class="fa-solid fa-clock text-[10px] mr-1"></i> Pendente</span>`;
+                case 'Cancelado':
+                    return `<span class="px-2.5 py-1 bg-rose-100 text-rose-800 text-xs font-semibold rounded-full inline-flex items-center"><i class="fa-solid fa-ban text-[10px] mr-1"></i> Cancelado</span>`;
+                default:
+                    return `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full">${status}</span>`;
+            }
+        }
+
+        function renderDashboardTable() {
+            const tbody = document.getElementById('dashboard-recent-table');
+            tbody.innerHTML = '';
+
+            const recentes = [...servicos].reverse().slice(0, 5);
+
+            if (recentes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Nenhum serviço cadastrado.</td></tr>`;
+                return;
+            }
+
+            recentes.forEach(s => {
+                const pessoa = pessoas.find(p => p.id === s.pessoaId) || { nome: 'Desconhecido' };
+                const dataFormatada = new Date(s.dataInicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 font-semibold text-slate-900">${pessoa.nome}</td>
+                        <td class="p-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">${s.setor}</span></td>
+                        <td class="p-4 text-slate-800">${s.descricao}</td>
+                        <td class="p-4 text-slate-600">${s.solicitante}</td>
+                        <td class="p-4 text-xs text-slate-500">${dataFormatada}</td>
+                        <td class="p-4">${getStatusBadge(s.status)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Renderiza Pessoas (sem a matrícua)
+        function renderPessoas() {
+            const container = document.getElementById('pessoas-grid');
+            const searchQuery = document.getElementById('filter-pessoa-search').value.toLowerCase();
+            const setorFilter = document.getElementById('filter-pessoa-setor').value;
+
+            container.innerHTML = '';
+
+            const filtradas = pessoas.filter(p => {
+                const matchesSearch = p.nome.toLowerCase().includes(searchQuery) || p.cargo.toLowerCase().includes(searchQuery);
+                const matchesSetor = !setorFilter || p.setor === setorFilter;
+                return matchesSearch && matchesSetor;
+            });
+
+            if (filtradas.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Nenhuma pessoa encontrada com os filtros atuais.</div>`;
+                return;
+            }
+
+            filtradas.forEach(p => {
+                const servicosPessoa = servicos.filter(s => s.pessoaId === p.id);
+                const servicoAtivo = servicosPessoa.find(s => s.status === 'Em Andamento');
+
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${p.avatar}" alt="${p.nome}" class="w-12 h-12 rounded-full object-cover border border-slate-200">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 text-base leading-snug">${p.nome}</h4>
+                                        <p class="text-xs text-slate-500">${p.cargo}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="openNewPessoaModal('${p.id}')" title="Editar" class="p-1.5 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button onclick="deletePessoa('${p.id}')" title="Excluir" class="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-600 border-t border-b border-slate-100 py-3 mb-4">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Setor:</span>
+                                    <span class="font-medium text-slate-800">${p.setor}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Total de Serviços:</span>
+                                    <span class="font-semibold text-brand-600">${servicosPessoa.length} executado(s)</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-400">Status Atual:</span>
+                                    ${servicoAtivo ? 
+                                        `<span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-semibold rounded text-[10px]">Em Serviço</span>` : 
+                                        `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-medium rounded text-[10px]">Disponível</span>`}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="openPessoaDetalhes('${p.id}')" class="w-full py-2 bg-slate-50 hover:bg-slate-100 text-brand-700 border border-slate-200 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center">
+                            <i class="fa-solid fa-address-card mr-2"></i> Ver Ficha e Serviços
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // Renderiza Lista de Setores (Página de Gerenciamento)
+        function renderSetores() {
+            const container = document.getElementById('setores-grid');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            setores.forEach(setorNome => {
+                const qtdPessoas = pessoas.filter(p => p.setor === setorNome).length;
+                const qtdServicos = servicos.filter(s => s.setor === setorNome).length;
+
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-brand-300 transition-all">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm">
+                                    <i class="fa-solid fa-folder"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">${setorNome}</h4>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openEditSetorModal('${setorNome}')" class="p-1.5 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100" title="Editar Setor">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteSetor('${setorNome}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50" title="Excluir Setor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-3 text-slate-500">
+                            <div><strong class="text-slate-800">${qtdPessoas}</strong> Integrantes</div>
+                            <div><strong class="text-slate-800">${qtdServicos}</strong> Serviços</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openPessoaDetalhes(pessoaId) {
+            const pessoa = pessoas.find(p => p.id === pessoaId);
+            if (!pessoa) return;
+
+            const servicosPessoa = servicos.filter(s => s.pessoaId === pessoaId);
+            const ativo = servicosPessoa.some(s => s.status === 'Em Andamento');
+
+            document.getElementById('modal-p-avatar').src = pessoa.avatar;
+            document.getElementById('modal-p-nome').textContent = pessoa.nome;
+            document.getElementById('modal-p-cargo-setor').textContent = `${pessoa.cargo} • Setor ${pessoa.setor}`;
+            document.getElementById('modal-p-total-servicos').textContent = servicosPessoa.length;
+
+            const statusEl = document.getElementById('modal-p-status');
+            if (ativo) {
+                statusEl.textContent = "Em Serviço Ativo";
+                statusEl.className = "inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800";
+            } else {
+                statusEl.textContent = "Disponível";
+                statusEl.className = "inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-700";
+            }
+
+            const tbody = document.getElementById('modal-p-servicos-list');
+            tbody.innerHTML = '';
+
+            if (servicosPessoa.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Nenhum serviço atribuído a esta pessoa até o momento.</td></tr>`;
+            } else {
+                servicosPessoa.forEach(s => {
+                    const dataFormatada = new Date(s.dataInicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 text-slate-500">${dataFormatada}</td>
+                            <td class="p-3 font-medium text-slate-800">${s.descricao}</td>
+                            <td class="p-3 text-slate-600">${s.solicitante}</td>
+                            <td class="p-3">${getStatusBadge(s.status)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            openModal('modal-pessoa-detalhes');
+        }
+
+        function renderServicos() {
+            const tbody = document.getElementById('servicos-main-table');
+            const query = document.getElementById('filter-servico-query').value.toLowerCase();
+            const setor = document.getElementById('filter-servico-setor').value;
+            const pessoaId = document.getElementById('filter-servico-pessoa').value;
+            const status = document.getElementById('filter-servico-status').value;
+
+            tbody.innerHTML = '';
+
+            const filtrados = servicos.filter(s => {
+                const pessoa = pessoas.find(p => p.id === s.pessoaId) || { nome: '' };
+                const matchesQuery = s.descricao.toLowerCase().includes(query) || s.solicitante.toLowerCase().includes(query) || pessoa.nome.toLowerCase().includes(query);
+                const matchesSetor = !setor || s.setor === setor;
+                const matchesPessoa = !pessoaId || s.pessoaId === pessoaId;
+                const matchesStatus = !status || s.status === status;
+
+                return matchesQuery && matchesSetor && matchesPessoa && matchesStatus;
+            });
+
+            document.getElementById('servico-count-badge').textContent = `${filtrados.length} registros`;
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum serviço atende aos critérios selecionados.</td></tr>`;
+                return;
+            }
+
+            filtrados.reverse().forEach(s => {
+                const pessoa = pessoas.find(p => p.id === s.pessoaId) || { nome: 'Desconhecido' };
+                const dataFormatada = new Date(s.dataInicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 text-xs text-slate-500 whitespace-nowrap">${dataFormatada}</td>
+                        <td class="p-4 font-semibold text-slate-900">${pessoa.nome}</td>
+                        <td class="p-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">${s.setor}</span></td>
+                        <td class="p-4 text-slate-800 max-w-xs">
+                            <div class="font-medium">${s.descricao}</div>
+                            ${s.obs ? `<div class="text-xs text-slate-400 italic">${s.obs}</div>` : ''}
+                        </td>
+                        <td class="p-4 text-slate-600">${s.solicitante}</td>
+                        <td class="p-4">${getStatusBadge(s.status)}</td>
+                        <td class="p-4 text-right space-x-1 whitespace-nowrap">
+                            <select onchange="updateServicoStatus('${s.id}', this.value)" class="text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500">
+                                <option value="Em Andamento" ${s.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                                <option value="Concluído" ${s.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
+                                <option value="Pendente" ${s.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                                <option value="Cancelado" ${s.status === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                            </select>
+                            <button onclick="deleteServico('${s.id}')" title="Excluir" class="text-rose-600 hover:text-rose-800 p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function resetServicosFilters() {
+            document.getElementById('filter-servico-query').value = '';
+            document.getElementById('filter-servico-setor').value = '';
+            document.getElementById('filter-servico-pessoa').value = '';
+            document.getElementById('filter-servico-status').value = '';
+            renderServicos();
+        }
+
+        function renderRelatorioDiario() {
+            const dataFiltro = document.getElementById('relatorio-date-filter').value || new Date().toISOString().split('T')[0];
+            const setorFiltro = document.getElementById('relatorio-setor-filter').value;
+
+            document.getElementById('relatorio-emissao-date').textContent = new Date().toLocaleDateString('pt-BR');
+            document.getElementById('relatorio-filtro-data-label').textContent = new Date(dataFiltro + 'T00:00:00').toLocaleDateString('pt-BR');
+
+            const servicosDia = servicos.filter(s => {
+                const dataServico = s.dataInicio.split('T')[0];
+                const matchesData = dataServico === dataFiltro;
+                const matchesSetor = !setorFiltro || s.setor === setorFiltro;
+                return matchesData && matchesSetor;
+            });
+
+            document.getElementById('rel-total-count').textContent = servicosDia.length;
+            document.getElementById('rel-concluidos-count').textContent = servicosDia.filter(s => s.status === 'Concluído').length;
+            document.getElementById('rel-ativos-count').textContent = servicosDia.filter(s => s.status === 'Em Andamento').length;
+
+            const tbody = document.getElementById('relatorio-table-body');
+            tbody.innerHTML = '';
+
+            if (servicosDia.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">Nenhum serviço registrado para os filtros selecionados no dia.</td></tr>`;
+                return;
+            }
+
+            servicosDia.forEach(s => {
+                const pessoa = pessoas.find(p => p.id === s.pessoaId) || { nome: 'N/A' };
+                const hora = s.dataInicio.split('T')[1] || '--:--';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-mono text-slate-600">${hora}</td>
+                        <td class="p-3 font-bold text-slate-900">${pessoa.nome}</td>
+                        <td class="p-3 text-slate-700">${s.setor}</td>
+                        <td class="p-3 text-slate-800 font-medium">${s.descricao}</td>
+                        <td class="p-3 text-slate-700">${s.solicitante}</td>
+                        <td class="p-3">${getStatusBadge(s.status)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateServicoStatus(servicoId, newStatus) {
+            const servico = servicos.find(s => s.id === servicoId);
+            if (servico) {
+                servico.status = newStatus;
+                saveData();
+            }
+        }
+
+        function deleteServico(servicoId) {
+            if (confirm("Tem certeza que deseja remover este registro de serviço?")) {
+                servicos = servicos.filter(s => s.id !== servicoId);
+                saveData();
+            }
+        }
+
+        function deletePessoa(pessoaId) {
+            if (confirm("Tem certeza que deseja excluir este integrante? Os serviços permanecerão vinculados com histórico.")) {
+                pessoas = pessoas.filter(p => p.id !== pessoaId);
+                saveData();
+            }
+        }
+
+        // Adicionar / Editar Setor
+        function handleSaveSetor(e) {
+            e.preventDefault();
+            const oldNome = document.getElementById('form-setor-old-nome').value.trim();
+            const newNome = document.getElementById('form-setor-nome').value.trim();
+
+            if (!newNome) return;
+
+            if (oldNome) {
+                // Editar setor existente
+                const index = setores.indexOf(oldNome);
+                if (index !== -1) setores[index] = newNome;
+
+                // Atualizar em cascata nas pessoas e serviços
+                pessoas.forEach(p => { if (p.setor === oldNome) p.setor = newNome; });
+                servicos.forEach(s => { if (s.setor === oldNome) s.setor = newNome; });
+            } else {
+                // Criar novo setor
+                if (setores.includes(newNome)) {
+                    alert("Este setor já está cadastrado!");
+                    return;
+                }
+                setores.push(newNome);
+            }
+
+            saveData();
+            closeModal('modal-novo-setor');
+            document.getElementById('form-novo-setor').reset();
+            document.getElementById('form-setor-old-nome').value = '';
+        }
+
+        function deleteSetor(setorNome) {
+            const pessoasVinculadas = pessoas.filter(p => p.setor === setorNome).length;
+            const servicosVinculados = servicos.filter(s => s.setor === setorNome).length;
+
+            if (pessoasVinculadas > 0 || servicosVinculados > 0) {
+                if (!confirm(`O setor "${setorNome}" possui ${pessoasVinculadas} pessoa(s) e ${servicosVinculados} serviço(s) atrelados. Deseja realmente excluir?`)) {
+                    return;
+                }
+            } else {
+                if (!confirm(`Deseja excluir o setor "${setorNome}"?`)) return;
+            }
+
+            setores = setores.filter(s => s !== setorNome);
+            saveData();
+        }
+
+        function handleSaveServico(e) {
+            e.preventDefault();
+
+            const novoServico = {
+                id: 's_' + Date.now(),
+                pessoaId: document.getElementById('form-s-pessoa').value,
+                setor: document.getElementById('form-s-setor').value,
+                solicitante: document.getElementById('form-s-solicitante').value,
+                descricao: document.getElementById('form-s-descricao').value,
+                dataInicio: document.getElementById('form-s-inicio').value,
+                status: document.getElementById('form-s-status').value,
+                obs: document.getElementById('form-s-obs').value
+            };
+
+            servicos.push(novoServico);
+            saveData();
+            closeModal('modal-novo-servico');
+            document.getElementById('form-novo-servico').reset();
+        }
+
+        function handleSavePessoa(e) {
+            e.preventDefault();
+            const id = document.getElementById('form-p-id').value;
+
+            if (id) {
+                // Editar
+                const pessoa = pessoas.find(p => p.id === id);
+                if (pessoa) {
+                    pessoa.nome = document.getElementById('form-p-nome').value;
+                    pessoa.setor = document.getElementById('form-p-setor').value;
+                    pessoa.cargo = document.getElementById('form-p-cargo').value;
+                }
+            } else {
+                // Criar
+                const novaPessoa = {
+                    id: 'p_' + Date.now(),
+                    nome: document.getElementById('form-p-nome').value,
+                    setor: document.getElementById('form-p-setor').value,
+                    cargo: document.getElementById('form-p-cargo').value,
+                    avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150`
+                };
+                pessoas.push(novaPessoa);
+            }
+
+            saveData();
+            closeModal('modal-nova-pessoa');
+            document.getElementById('form-nova-pessoa').reset();
+            document.getElementById('form-p-id').value = '';
+        }
+
+        function populateSetorDropdowns() {
+            setores.sort();
+            const dropdowns = ['filter-pessoa-setor', 'filter-servico-setor', 'relatorio-setor-filter', 'form-p-setor', 'form-s-setor'];
+
+            dropdowns.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const val = el.value;
+
+                if (id.startsWith('filter') || id.startsWith('relatorio')) {
+                    el.innerHTML = `<option value="">Todos os Setores</option>`;
+                } else {
+                    el.innerHTML = ``;
+                }
+
+                setores.forEach(s => {
+                    el.innerHTML += `<option value="${s}" ${val === s ? 'selected' : ''}>${s}</option>`;
+                });
+            });
+        }
+
+        function populatePessoasDropdown(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            select.innerHTML = '';
+            pessoas.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.nome} (${p.setor})</option>`;
+            });
+
+            const filterPessoa = document.getElementById('filter-servico-pessoa');
+            if (filterPessoa) {
+                const currentVal = filterPessoa.value;
+                filterPessoa.innerHTML = `<option value="">Todas as Pessoas</option>`;
+                pessoas.forEach(p => {
+                    filterPessoa.innerHTML += `<option value="${p.id}" ${currentVal === p.id ? 'selected' : ''}>${p.nome}</option>`;
+                });
+            }
+        }
+
+        window.onload = function() {
+            document.getElementById('relatorio-date-filter').value = new Date().toISOString().split('T')[0];
+            refreshAll();
+        };
+    </script>
+</body>
+</html>
