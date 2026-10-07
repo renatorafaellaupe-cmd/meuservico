@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Gestão & Comando de Serviço com Firebase</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN com Subresource Integrity (SRI) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0265d2',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .print-card { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+        }
+        .print-only { display: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- OVERLAY DE AUTENTICAÇÃO (Exibido por padrão) -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-700">
+            <div class="bg-slate-950 p-6 text-white text-center border-b border-slate-800">
+                <div class="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl mx-auto mb-3">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2 class="text-xl font-bold">ComandoServ</h2>
+                <p class="text-xs text-slate-400 mt-1">Autenticação de Acesso Restrito</p>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div id="auth-alert" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+
+                <!-- FORMULÁRIO DE LOGIN -->
+                <form id="form-auth" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="email" id="auth-email" required placeholder="seu@email.com" autocomplete="username" class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Senha</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="password" id="auth-password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="current-password" class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 space-y-2">
+                        <button type="submit" id="btn-auth-submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-all shadow-lg flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>Entrar no Sistema</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                    <span><i class="fa-solid fa-lock text-emerald-500 mr-1"></i> Acesso Seguro</span>
+                    <span><i class="fa-solid fa-database text-emerald-500 mr-1"></i> Realtime DB</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER (Protegido: Oculto com 'hidden' por padrão) -->
+    <div id="app-content" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
+
+        <!-- Sidebar / Navegação Lateral -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 no-print flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="p-5 bg-slate-950 flex items-center justify-between border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-brand-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-white text-base leading-tight">ComandoServ</h1>
+                            <p class="text-xs text-slate-400">Escala & Serviços</p>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="p-4 space-y-1.5">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all bg-brand-600 text-white shadow-md">
+                        <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                        <span>Visão Geral (KPIs)</span>
+                    </button>
+                    <button onclick="switchTab('pessoas')" id="nav-pessoas" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                        <i class="fa-solid fa-users w-5 text-center"></i>
+                        <span>Pessoas & Comando</span>
+                    </button>
+                    <button onclick="switchTab('servicos')" id="nav-servicos" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                        <i class="fa-solid fa-list-check w-5 text-center"></i>
+                        <span>Lançar / Serviços</span>
+                    </button>
+                    <button onclick="switchTab('setores')" id="nav-setores" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                        <i class="fa-solid fa-sitemap w-5 text-center"></i>
+                        <span>Gerenciar Setores</span>
+                    </button>
+                    <button onclick="switchTab('relatorio')" id="nav-relatorio" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                        <i class="fa-solid fa-file-invoice w-5 text-center"></i>
+                        <span>Relatório Diário</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 space-y-3">
+                <button id="btn-logout" class="w-full py-2 px-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sair da Conta</span>
+                </button>
+
+                <div class="text-xs text-slate-400 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span>Usuário:</span>
+                        <span id="user-email-display" class="font-mono text-[10px] text-brand-400 truncate max-w-[110px]">Aguardando...</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Database:</span>
+                        <span id="firestore-status-badge" class="inline-flex items-center text-emerald-400"><i class="fa-solid fa-circle text-[8px] mr-1.5 animate-pulse"></i> Conectado</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print shadow-sm">
+                <div>
+                    <h2 id="page-title" class="text-xl font-bold text-slate-900">Painel Principal</h2>
+                    <p id="page-subtitle" class="text-xs text-slate-500">Resumo executivo em tempo real no Realtime Database</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openNewServicoModal()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg flex items-center shadow transition-all">
+                        <i class="fa-solid fa-plus mr-2"></i> Novo Serviço
+                    </button>
+                    <button onclick="openNewPessoaModal()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg flex items-center shadow transition-all">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Nova Pessoa
+                    </button>
+                    <button onclick="openModal('modal-novo-setor')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs sm:text-sm font-medium px-3 py-2.5 rounded-lg flex items-center transition-all">
+                        <i class="fa-solid fa-folder-plus mr-2 text-brand-600"></i> Setor
+                    </button>
+                </div>
+            </header>
+
+            <div class="p-4 sm:p-6 space-y-6 flex-1">
+                <!-- PAGE 1: DASHBOARD -->
+                <section id="page-dashboard" class="tab-page space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Efetivo Cadastrado</p>
+                                <h3 id="kpi-total-pessoas" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Em Andamento</p>
+                                <h3 id="kpi-servicos-ativos" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Concluídos Hoje</p>
+                                <h3 id="kpi-servicos-concluidos" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-check-circle"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Setores Ativos</p>
+                                <h3 id="kpi-total-setores" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-sitemap"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-900 text-lg">Serviços Recentes</h3>
+                            <button onclick="switchTab('servicos')" class="text-xs font-semibold text-brand-600 hover:text-brand-800">
+                                Ver Todos <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-4">Pessoa Escalada</th>
+                                        <th class="p-4">Setor</th>
+                                        <th class="p-4">Serviço / Missão</th>
+                                        <th class="p-4">Solicitante</th>
+                                        <th class="p-4">Horário</th>
+                                        <th class="p-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-recent-table" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 2: PESSOAS -->
+                <section id="page-pessoas" class="tab-page hidden space-y-6">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center gap-4">
+                        <input type="text" id="filter-pessoa-search" oninput="renderPessoas()" placeholder="Buscar pessoa..." class="w-full max-w-xs p-2 border rounded-lg text-sm">
+                        <select id="filter-pessoa-setor" onchange="renderPessoas()" class="border rounded-lg p-2 text-sm bg-white">
+                            <option value="">Todos os Setores</option>
+                        </select>
+                    </div>
+                    <div id="pessoas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+                </section>
+
+                <!-- PAGE 3: SERVIÇOS -->
+                <section id="page-servicos" class="tab-page hidden space-y-6">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-900">Gerenciamento de Serviços</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-4">Data/Hora</th>
+                                        <th class="p-4">Pessoa</th>
+                                        <th class="p-4">Setor</th>
+                                        <th class="p-4">Descrição</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servicos-main-table" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 4: SETORES -->
+                <section id="page-setores" class="tab-page hidden space-y-6">
+                    <div id="setores-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </section>
+
+                <!-- PAGE 5: RELATÓRIO -->
+                <section id="page-relatorio" class="tab-page hidden space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900">Relatório Diário</h3>
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100">
+                                <tr>
+                                    <th class="p-2">Hora</th>
+                                    <th class="p-2">Pessoa</th>
+                                    <th class="p-2">Setor</th>
+                                    <th class="p-2">Descrição</th>
+                                    <th class="p-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="relatorio-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- SCRIPT FIREBASE COMPLETO E CORRIGIDO -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            onValue 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiOe9oRW-yMzlwfV8W2L3xYPUF5Tv83a4",
+            authDomain: "meuservico-67966.firebaseapp.com",
+            databaseURL: "https://meuservico-67966-default-rtdb.firebaseio.com",
+            projectId: "meuservico-67966",
+            storageBucket: "meuservico-67966.firebasestorage.app",
+            messagingSenderId: "897140497245",
+            appId: "1:897140497245:web:f57b314a26c5f48ee866b4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // Prevenção de XSS
+        window.escapeHTML = function(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
+        // Funções de Interface Globais (para evitar erros com type="module")
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-page').forEach(el => el.classList.add('hidden'));
+            const targetPage = document.getElementById(`page-${tabId}`);
+            if (targetPage) targetPage.classList.remove('hidden');
+        };
+
+        window.openNewServicoModal = function() {
+            console.log("Abrir modal de novo serviço");
+        };
+
+        window.openNewPessoaModal = function() {
+            console.log("Abrir modal de nova pessoa");
+        };
+
+        window.openModal = function(modalId) {
+            console.log("Abrir modal:", modalId);
+        };
+
+        window.renderPessoas = function() {
+            console.log("Renderizando pessoas...");
+        };
+
+        // Elementos DOM
+        const authForm = document.getElementById('form-auth');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+        const btnLogout = document.getElementById('btn-logout');
+        const authAlert = document.getElementById('auth-alert');
+        const authScreen = document.getElementById('auth-screen');
+        const appContent = document.getElementById('app-content');
+        const userEmailDisplay = document.getElementById('user-email-display');
+
+        function showAlert(msg, isError = true) {
+            authAlert.className = `p-3 rounded-lg text-xs font-medium ${isError ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`;
+            authAlert.textContent = window.escapeHTML(msg);
+            authAlert.classList.remove('hidden');
+        }
+
+        // Submissão do Login
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value;
+
+            if (!email || !password) {
+                showAlert("Preencha todos os campos.");
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                authAlert.classList.add('hidden');
+            } catch (err) {
+                console.error("Erro no login:", err);
+                showAlert("E-mail ou senha incorretos.");
+            }
+        });
+
+        // Logout
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error("Erro ao sair:", err);
+            }
+        });
+
+        // Controle Seguro da Sessão de Autenticação
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Usuário autenticado: Esconde a tela de login e abre o app
+                authScreen.classList.add('hidden');
+                appContent.classList.remove('hidden');
+                userEmailDisplay.textContent = window.escapeHTML(user.email);
+                initDatabaseListeners();
+            } else {
+                // Usuário não autenticado: Mantém a aplicação oculta e exibe a tela de login
+                authScreen.classList.remove('hidden');
+                appContent.classList.add('hidden');
+                userEmailDisplay.textContent = "Desconectado";
+            }
+        });
+
+        function initDatabaseListeners() {
+            const appId = 'meuservico-67966';
+            onValue(ref(db, `artifacts/${appId}/public/data/pessoas`), (snapshot) => {
+                const data = snapshot.val();
+                window.pessoas = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : [];
+                const kpiPessoas = document.getElementById('kpi-total-pessoas');
+                if (kpiPessoas) kpiPessoas.textContent = window.pessoas.length;
+            }, (error) => {
+                console.error("Erro ao ler banco de dados:", error);
+            });
+        }
+    </script>
+</body>
+</html>
